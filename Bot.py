@@ -1,7 +1,7 @@
 import discord
 from discord import guild
 from discord.ext import commands
-
+import pickle
 import settings
 
 intents = discord.Intents.default()
@@ -9,8 +9,24 @@ intents = discord.Intents.default()
 client = commands.Bot(command_prefix=settings.Prefix, help_command=None, intents=intents)
 
 
+def save_object(obj):
+    try:
+        with open("data.pickle", "wb") as f:
+            pickle.dump(obj, f, protocol=pickle.HIGHEST_PROTOCOL)
+    except Exception as ex:
+        print("Error during pickling object (Possibly unsupported):", ex)
+
+
+def load_object(filename):
+    try:
+        with open(filename, "rb") as f:
+            return pickle.load(f)
+    except Exception as ex:
+        print("Error during unpickling object (Possibly unsupported):", ex)
+
+
 class СharacterSheet:
-    def __init__(self, name, id_play,id_char, ST=10, DX=10, IQ=10, HT=10):
+    def __init__(self, name, id_play, id_char, ST=10, DX=10, IQ=10, HT=10):
         self.id_play = id_play
         self.id_char = id_char
         self.name = name
@@ -26,11 +42,24 @@ class СharacterSheet:
         self.MOVE = round((HT + DX) / 4)
         self.unspent_points = 2
 
+    Characters = []
+
 
 @client.event
 async def on_ready():
     print("Bot is ready!")
     await client.change_presence(status=discord.Status.online, activity=discord.Game(settings.BotStatus))
+
+
+@client.command()
+async def cheak_char(ctx):
+    channel = ctx.channel
+
+    # for i in СharacterSheet.Characters:
+    #     if i.play_id == channel.id:
+    #         print("Yes")
+    #     else:
+    #         print("Nou")
 
 
 @client.command()
@@ -41,6 +70,8 @@ async def create(ctx, channel_name):
     channel = await guild.create_text_channel(channel_name)
     id_char = channel.id
     NewChar = СharacterSheet(name=channel_name, id_play=id_play, id_char=id_char)
+    СharacterSheet.Characters.append(NewChar)
+    save_object(СharacterSheet.Characters)
     await channel.send(
         f"Имя персонажа: {NewChar.name}\n"
         f'ST: {NewChar.ST}\n'
@@ -54,18 +85,32 @@ async def create(ctx, channel_name):
         f'{NewChar.id_char}\n'
         f'{NewChar.id_play}\n'
     )
+    await channel.send(f"У вас непотрачено {NewChar.unspent_points} очка навыков")
 
 
 @client.command()
-async def print_info(ctx):
-    channel = discord.utils.get(ctx.guild.channels, name='')
-    too = ctx.channel.name
-    messages = await channel.history(limit=123).flatten()
-    await too.send(messages)
+async def status(ctx):
+    load_object(СharacterSheet.Characters)
+    guild = ctx.guild
+    id_play = ctx.message.channel.id
+    for pos, i in enumerate(СharacterSheet.Characters):
+        if id_play == i.id_play:
+            p = pos
+    id = СharacterSheet.Characters[p].id_char
+    channel = discord.utils.get(guild.text_channels, id=id)
+    messages = await channel.history(limit=200).flatten()
+    # print(messages)
+    # print(messages[0].content)
+    print(help(ctx))
+    id = СharacterSheet.Characters[p].id_play
+    channel = discord.utils.get(guild.text_channels, id=id)
+    for message in messages:
+        await channel.send(message.content)
 
 
 # @client.command()
 # async def spent(ctx, points, stat):
+#     if points
 
 # @client.event
 # async def on_message(message):
