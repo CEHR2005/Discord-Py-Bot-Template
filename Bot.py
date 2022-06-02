@@ -10,8 +10,9 @@ client = commands.Bot(command_prefix=settings.Prefix, help_command=None, intents
 
 
 class СharacterSheet:
-    def __init__(self, name, id, ST=10, DX=10, IQ=10, HT=10):
-        self.id = id
+    def __init__(self, name, id_play,id_char, ST=10, DX=10, IQ=10, HT=10):
+        self.id_play = id_play
+        self.id_char = id_char
         self.name = name
         self.ST = ST
         self.DX = DX
@@ -34,10 +35,12 @@ async def on_ready():
 
 @client.command()
 async def create(ctx, channel_name):
+    channel = ctx.channel
+    id_play = channel.id
     guild = ctx.guild
     channel = await guild.create_text_channel(channel_name)
-    id = channel.id
-    NewChar = СharacterSheet(name=channel_name, id=id)
+    id_char = channel.id
+    NewChar = СharacterSheet(name=channel_name, id_play=id_play, id_char=id_char)
     await channel.send(
         f"Имя персонажа: {NewChar.name}\n"
         f'ST: {NewChar.ST}\n'
@@ -48,7 +51,8 @@ async def create(ctx, channel_name):
         f'WILL: {NewChar.WILL}\n'
         f'MOVE: {NewChar.MOVE}\n'
         f'SPEED: {NewChar.SPEED}\n'
-        f'{NewChar.id}'
+        f'{NewChar.id_char}\n'
+        f'{NewChar.id_play}\n'
     )
 
 
