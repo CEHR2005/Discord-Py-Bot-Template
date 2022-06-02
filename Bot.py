@@ -10,7 +10,8 @@ client = commands.Bot(command_prefix=settings.Prefix, help_command=None, intents
 
 
 class СharacterSheet:
-    def __init__(self, name, ST=10, DX=10, IQ=10, HT=10):
+    def __init__(self, name, id, ST=10, DX=10, IQ=10, HT=10):
+        self.id = id
         self.name = name
         self.ST = ST
         self.DX = DX
@@ -25,9 +26,6 @@ class СharacterSheet:
         self.unspent_points = 2
 
 
-
-
-
 @client.event
 async def on_ready():
     print("Bot is ready!")
@@ -38,7 +36,8 @@ async def on_ready():
 async def create(ctx, channel_name):
     guild = ctx.guild
     channel = await guild.create_text_channel(channel_name)
-    NewChar = СharacterSheet(channel_name)
+    id = channel.id
+    NewChar = СharacterSheet(name=channel_name, id=id)
     await channel.send(
         f"Имя персонажа: {NewChar.name}\n"
         f'ST: {NewChar.ST}\n'
@@ -49,13 +48,17 @@ async def create(ctx, channel_name):
         f'WILL: {NewChar.WILL}\n'
         f'MOVE: {NewChar.MOVE}\n'
         f'SPEED: {NewChar.SPEED}\n'
+        f'{NewChar.id}'
     )
-# @client.command()
-# async def print_info(ctx):
-#     channel = ctx.author.name
-#     too = ctx.channel.name
-#     messages = await channel.history(limit=200).flatten()
-#     await too.send(messages)
+
+
+@client.command()
+async def print_info(ctx):
+    channel = discord.utils.get(ctx.guild.channels, name='')
+    too = ctx.channel.name
+    messages = await channel.history(limit=123).flatten()
+    await too.send(messages)
+
 
 # @client.command()
 # async def spent(ctx, points, stat):
