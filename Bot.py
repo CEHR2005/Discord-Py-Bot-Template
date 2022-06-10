@@ -1,5 +1,4 @@
 import discord
-from discord import guild
 from sqlitedict import SqliteDict
 from discord.ext import commands
 import settings
@@ -66,8 +65,14 @@ def hp_up(ctx):
         save("max_hp", max_hp, char)
         save("hp", max_hp, char)
         return "Получено +8 хп за уровень"
-    if char == "Test.sqlite3":
+    if char == "Andre.sqlite3":
         max_hp += 8
+        save("max_hp", max_hp, char)
+        save("hp", max_hp, char)
+        return "Получено +8 хп за уровень"
+    if char == "Test.sqlite3":
+        ht = int(load("ht", char))
+        max_hp += 8 + (ht - 10)
         save("max_hp", max_hp, char)
         save("hp", max_hp, char)
         return "Получено +8 хп за уровень"
@@ -100,29 +105,6 @@ async def on_ready():
 
 
 @client.command()
-async def create(ctx, channel_name):
-    channel = ctx.channel
-    id_play = channel.id
-    guild = ctx.guild
-    channel = await guild.create_text_channel(channel_name)
-    id_char = channel.id
-    NewChar = СharacterSheet(name=channel_name, id_play=id_play, id_char=id_char)
-    СharacterSheet.Characters.append(NewChar)
-    await channel.send(
-        f"Имя персонажа: {NewChar.name}\n"
-        f'ST: {NewChar.ST}\n'
-        f'HT: {NewChar.HT}\n'
-        f'DX: {NewChar.DX}\n'
-        f'IQ: {NewChar.IQ}\n'
-        f'PER: {NewChar.PER}\n'
-        f'WILL: {NewChar.WILL}\n'
-        f'MOVE: {NewChar.MOVE}\n'
-        f'SPEED: {NewChar.SPEED}\n'
-    )
-    await channel.send(f"У вас непотрачено {NewChar.unspent_points} очка навыков")
-
-
-@client.command()
 async def status(ctx):
     guild = ctx.guild
     channel = ctx.channel
@@ -147,7 +129,17 @@ async def inventory(ctx):
 @client.command()
 async def dict_add(ctx, key, value):
     print("-----")
-    print(f'Пытаемся добваить {key} с значением {value} в {who(ctx)}')
+    print(f'Пытаемся добавить {key} с значением {value} в {who(ctx)}')
+    save(key, value, who(ctx))
+    print(load_all(who(ctx)))
+
+@client.command()
+async def dict_add_skill(ctx, key, stat, value):
+    print("-----")
+    value = int(value)
+    stat = int(load(f"{stat}", who(ctx)))
+    value = value + stat - 1
+    print(f'Пытаемся добавить {key} с значением {value} в {who(ctx)}')
     save(key, value, who(ctx))
     print(load_all(who(ctx)))
 
@@ -165,11 +157,28 @@ async def info(ctx):
     channel = ctx.channel
     lvl = int(load('lvl', char))
     max_exp = settings.lvlupexp[int(lvl + 1)]
+    actual_exp = int(load("actual_exp", who(ctx)))
+    skill_point = int(load("skill_point", who(ctx)))
+    upgrade_point = int(load("upgrade_point", who(ctx)))
+    evolution_point = int(load("evolution_point", who(ctx)))
+    st = int(load("st", who(ctx)))
+    dx = int(load("dx", who(ctx)))
+    ht = int(load("ht", who(ctx)))
+    intelligence = int(load("int", who(ctx)))
     print("-----")
     print(load_all(who(ctx)))
-    await channel.send(f"Уровень: {lvl}\n"
-                       f"Опыт: {load('actual_exp', char)}/{max_exp}\n"
-                       f"Хп: {load('hp', char)}/{load('max_hp', char)}")
+    await channel.send(
+        f"Уровень: {lvl}\n"
+        f"Опыт: {load('actual_exp', char)}/{max_exp}\n"
+        f"ST: {st}\n"
+        f"DX: {dx}\n"
+        f"HT: {ht}\n"
+        f"INT: {intelligence}\n"
+        f"Хп: {load('hp', char)}/{load('max_hp', char)}\n"
+        f"Очки умения: {skill_point}\n"
+        f"Очки улучшения: {upgrade_point}\n"
+        f"Очки эволюции: {evolution_point}\n"
+    )
 
 
 @client.command()
@@ -185,8 +194,7 @@ async def exp(ctx, value):
     channel = ctx.channel
     value = int(value)
     lvl = int(load("lvl", who(ctx)))
-    actual_exp = load("actual_exp", who(ctx))
-    actual_exp = int(actual_exp)
+    actual_exp = int(load("actual_exp", who(ctx)))
     max_exp = int(settings.lvlupexp[int(lvl + 1)])
     actual_exp += value
     skill_point = int(load("skill_point", who(ctx)))
@@ -205,7 +213,7 @@ async def exp(ctx, value):
             await channel.send("Получен поинт умения")
             evolution_point += 1
         actual_exp -= max_exp
-        max_exp = settings.lvlupexp[lvl]
+        max_exp = settings.lvlupexp[lvl+1]
     save("lvl", lvl, who(ctx))
     save("actual_exp", actual_exp, who(ctx))
     save("skill_point", skill_point, who(ctx))
@@ -244,6 +252,50 @@ async def chaos_info(ctx):
     channel = ctx.channel
     await channel.send(f"Энергия Хаоса: {int(load('chaos', who(ctx)))}/∞")
 
+@client.command()
+async def dr(ctx):
+    channel = ctx.channel
+    Torso_dr = int(load("Torso_dr", who(ctx)))
+    Skull_dr = int(load("Skull_dr", who(ctx)))
+    Eye_dr = int(load("Eye_dr", who(ctx)))
+    Face_dr = int(load("Face_dr", who(ctx)))
+    Neck_dr = int(load("Neck_dr", who(ctx)))
+    Groin_dr = int(load("Groin_dr", who(ctx)))
+    Arm_dr = int(load("Arm_dr", who(ctx)))
+    Leg_dr = int(load("Leg_dr", who(ctx)))
+    Hands_dr = int(load("Hands_dr", who(ctx)))
+    Feet_dr = int(load("Feet_dr", who(ctx)))
+    All_dr = int(load("All_dr", who(ctx)))
+    await channel.send(
+        f"Общий: {All_dr}\n"
+        f"Торс(0): {Torso_dr+All_dr}\n"
+        f"Череп(-7): {Skull_dr+All_dr}\n"
+        f"Урон x4\n"
+        f"Глаза(-9): {Eye_dr+All_dr}\n"
+        f"Урон x4, может ослепить\n"
+        f"Лицо(-5): {Face_dr+All_dr}\n"
+        f"Шея(-5): {Neck_dr+All_dr}\n"
+        f"Дробящий и разъедающий урон ×1.5, режущий ×2.\n"
+        f"Пах(-3): {Groin_dr+All_dr}\n"
+        f"Руки(-2): {Arm_dr+All_dr}\n"
+        f"Ноги(-2): {Leg_dr+All_dr}\n"
+        f"Кисти(-4): {Hands_dr+All_dr}\n"
+        f"Ступни(-4): {Feet_dr+All_dr}\n"
+    )
+
+@client.command()
+async def dr_gen(ctx):
+    save('Torso_dr', 0, who(ctx))
+    save('Skull_dr', 2, who(ctx))
+    save('Eye_dr', 0, who(ctx))
+    save('Face_dr', 0, who(ctx))
+    save('Neck_dr', 0, who(ctx))
+    save('Groin_dr', 0, who(ctx))
+    save('Arm_dr', 0, who(ctx))
+    save('Leg_dr', 0, who(ctx))
+    save('Hands_dr', 0, who(ctx))
+    save('Feet_dr', 0, who(ctx))
+    save('All_dr', 0, who(ctx))
 
 save("Титулы", ['Test1', 'test2'], "Nastya.sqlite3")
 # @client.command()
